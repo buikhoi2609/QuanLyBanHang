@@ -5,6 +5,7 @@ import com.store.backend.dto.LoginRequest;
 import com.store.backend.dto.RegisterRequest;
 import com.store.backend.security.JwtService;
 import com.store.backend.security.SecurityConfig;
+import com.store.backend.security.TokenBlacklistService;
 import com.store.backend.service.AuthService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -26,7 +28,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = AuthController.class)
-@Import({SecurityConfig.class, JwtService.class})
+@Import({SecurityConfig.class, JwtService.class, TokenBlacklistService.class})
 @AutoConfigureMockMvc
 class AuthControllerTest {
 
@@ -116,6 +118,30 @@ class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
+    void logout_coTokenHopLe_traVe200() throws Exception {
+        Map<String, Object> serviceResult = new HashMap<>();
+        serviceResult.put("success", true);
+        serviceResult.put("message", "Đăng xuất thành công");
+
+        when(authService.logout(anyString())).thenReturn(serviceResult);
+
+        String token = jwtService.generateToken("vana", "NhanVien");
+
+        mockMvc.perform(post("/api/auth/logout")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+
+        verify(authService).logout(token);
+    }
+
+    @Test
+    void logout_khongCoToken_traVe401Hoac403() throws Exception {
+        mockMvc.perform(post("/api/auth/logout"))
+                .andExpect(status().is4xxClientError());
     }
 
     @Test

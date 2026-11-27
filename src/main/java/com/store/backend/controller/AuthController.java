@@ -3,6 +3,7 @@ package com.store.backend.controller;
 import com.store.backend.dto.LoginRequest;
 import com.store.backend.dto.RegisterRequest;
 import com.store.backend.service.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -37,6 +38,17 @@ public class AuthController {
             return ResponseEntity.ok(result);
         }
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(result);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Map<String,Object>> logout(HttpServletRequest request) {
+        String header = request.getHeader("Authorization");
+        String token = (header != null && header.startsWith("Bearer "))
+                ? header.substring(7)
+                : null;
+
+        Map<String, Object> result = authService.logout(token);
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/me")

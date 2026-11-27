@@ -59,6 +59,15 @@ class JwtServiceTest {
     }
 
     @Test
+    void extractExpiration_traVeThoiDiemSauHienTai() {
+        JwtService jwtService = newService(60_000);
+
+        String token = jwtService.generateToken("khoi123", "NhanVien");
+
+        assertThat(jwtService.extractExpiration(token)).isAfter(new java.util.Date());
+    }
+
+    @Test
     void isTokenValid_voiTokenRac_traVeFalse() {
         JwtService jwtService = newService(60_000);
 

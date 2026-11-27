@@ -16,9 +16,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtService jwtService;
+    private final TokenBlacklistService tokenBlacklistService;
 
-    public SecurityConfig(JwtService jwtService) {
+    public SecurityConfig(JwtService jwtService, TokenBlacklistService tokenBlacklistService) {
         this.jwtService = jwtService;
+        this.tokenBlacklistService = tokenBlacklistService;
     }
 
     @Bean
@@ -34,14 +36,14 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
-                        .requestMatchers("/api/auth/me").authenticated()
+                        .requestMatchers("/api/auth/me", "/api/auth/logout").authenticated()
                         // Các API nghiệp vụ khác giữ nguyên hành vi hiện tại (chưa yêu cầu đăng nhập)
                         // để không phá vỡ frontend hiện có; có thể siết lại sau khi frontend tích hợp JWT.
                         .anyRequest().permitAll()
                 )
                 // Khởi tạo trực tiếp (không phải bean @Component) để tránh Spring Boot
                 // đăng ký thêm filter này như một servlet filter độc lập ngoài chuỗi này.
-                .addFilterBefore(new JwtAuthenticationFilter(jwtService), UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(new JwtAuthenticationFilter(jwtService, tokenBlacklistService), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

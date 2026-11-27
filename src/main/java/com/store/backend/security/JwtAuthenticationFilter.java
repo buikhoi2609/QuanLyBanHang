@@ -26,9 +26,11 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
+    private final TokenBlacklistService tokenBlacklistService;
 
-    public JwtAuthenticationFilter(JwtService jwtService) {
+    public JwtAuthenticationFilter(JwtService jwtService, TokenBlacklistService tokenBlacklistService) {
         this.jwtService = jwtService;
+        this.tokenBlacklistService = tokenBlacklistService;
     }
 
     @Override
@@ -45,7 +47,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String taiKhoan = jwtService.extractTaiKhoan(token);
                 boolean chuaXacThuc = SecurityContextHolder.getContext().getAuthentication() == null;
 
-                if (taiKhoan != null && chuaXacThuc && jwtService.isTokenValid(token, taiKhoan)) {
+                if (taiKhoan != null && chuaXacThuc && !tokenBlacklistService.isBlacklisted(token)
+                        && jwtService.isTokenValid(token, taiKhoan)) {
                     String chucVu = jwtService.extractChucVu(token);
                     List<SimpleGrantedAuthority> authorities =
                             List.of(new SimpleGrantedAuthority("ROLE_" + chucVu));

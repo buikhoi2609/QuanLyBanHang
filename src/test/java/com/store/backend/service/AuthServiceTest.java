@@ -5,6 +5,7 @@ import com.store.backend.dto.RegisterRequest;
 import com.store.backend.model.NhanVien;
 import com.store.backend.repository.NhanVienRepository;
 import com.store.backend.security.JwtService;
+import com.store.backend.security.TokenBlacklistService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -33,6 +35,9 @@ class AuthServiceTest {
 
     @Mock
     private JwtService jwtService;
+
+    @Mock
+    private TokenBlacklistService tokenBlacklistService;
 
     @InjectMocks
     private AuthService authService;
@@ -154,6 +159,27 @@ class AuthServiceTest {
 
         NhanVien userInResponse = (NhanVien) result.get("user");
         assertThat(userInResponse.getMatKhau()).isNull();
+    }
+
+    // ---------- logout ----------
+
+    @Test
+    void logout_coToken_blacklistToken() {
+        when(jwtService.extractExpiration("FAKE_JWT_TOKEN"))
+                .thenReturn(new java.util.Date(System.currentTimeMillis() + 60000));
+
+        Map<String, Object> result = authService.logout("FAKE_JWT_TOKEN");
+
+        assertThat(result.get("success")).isEqualTo(true);
+        verify(tokenBlacklistService).blacklist(eq("FAKE_JWT_TOKEN"), any());
+    }
+
+    @Test
+    void logout_khongCoToken_vanTraVeThanhCong() {
+        Map<String, Object> result = authService.logout(null);
+
+        assertThat(result.get("success")).isEqualTo(true);
+        verify(tokenBlacklistService, never()).blacklist(anyString(), any());
     }
 
     private NhanVien taoNhanVien() {

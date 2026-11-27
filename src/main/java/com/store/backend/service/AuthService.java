@@ -5,9 +5,11 @@ import com.store.backend.dto.RegisterRequest;
 import com.store.backend.model.NhanVien;
 import com.store.backend.repository.NhanVienRepository;
 import com.store.backend.security.JwtService;
+import com.store.backend.security.TokenBlacklistService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -18,13 +20,16 @@ public class AuthService {
     private final NhanVienRepository nhanVienRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final TokenBlacklistService tokenBlacklistService;
 
     private final String codeErrorAccountNotMath = "Tài khoản và mật khẩu không được để trống";
 
-    public AuthService(NhanVienRepository nhanVienRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
+    public AuthService(NhanVienRepository nhanVienRepository, PasswordEncoder passwordEncoder,
+                        JwtService jwtService, TokenBlacklistService tokenBlacklistService) {
         this.nhanVienRepository = nhanVienRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.tokenBlacklistService = tokenBlacklistService;
     }
 
     public Map<String, Object> register(RegisterRequest request) {
@@ -96,6 +101,23 @@ public class AuthService {
         response.put("message", "Đăng nhập thành công");
         response.put("token", token);
         response.put("user", nv);
+        return response;
+    }
+
+    public Map<String, Object> logout(String token) {
+        Map<String, Object> response = new HashMap<>();
+
+        if (token != null && !token.isBlank()) {
+            try {
+                Date expiration = jwtService.extractExpiration(token);
+                tokenBlacklistService.blacklist(token, expiration.toInstant());
+            } catch (Exception ignored) {
+                // Token không hợp lệ/đã hết hạn: không cần chặn thêm, vẫn coi như đăng xuất thành công
+            }
+        }
+
+        response.put("success", true);
+        response.put("message", "Đăng xuất thành công");
         return response;
     }
 
