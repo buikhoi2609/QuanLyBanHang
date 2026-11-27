@@ -38,7 +38,11 @@ public class DonHangService {
         DonHang existing = getById(id);
 
         existing.setMaNV(donHang.getMaNV());
-        existing.setNgayDat(donHang.getNgayDat());
+
+        if (donHang.getNgayDat() != null) {
+            existing.setNgayDat(donHang.getNgayDat());
+        }
+
         existing.setTongTien(donHang.getTongTien());
         existing.setPhuongThucThanhToan(
                 donHang.getPhuongThucThanhToan());
