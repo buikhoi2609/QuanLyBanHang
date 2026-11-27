@@ -5,6 +5,7 @@ import com.store.backend.dto.RegisterRequest;
 import com.store.backend.service.AuthService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -36,5 +37,14 @@ public class AuthController {
             return ResponseEntity.ok(result);
         }
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(result);
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<Map<String,Object>> me(Authentication authentication) {
+        Map<String, Object> result = authService.getProfile(authentication.getName());
+        if (Boolean.TRUE.equals(result.get("success"))) {
+            return ResponseEntity.ok(result);
+        }
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(result);
     }
 }
